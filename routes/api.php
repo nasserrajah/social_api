@@ -30,12 +30,22 @@ Route::get('/test-db', function () {
             'message' => 'Database connected successfully',
             'database' => DB::connection()->getDatabaseName()
         ]);
-    } catch (\Exception $e) {
+    }  catch (\Exception $e) {
+        Log::error('Database connection failed: ' . $e->getMessage());
         return response()->json([
             'status' => 'error', 
             'message' => 'Database connection failed: ' . $e->getMessage()
         ], 500);
     }
+});
+
+Route::get('/test-env', function () {
+    return response()->json([
+        'app_env' => env('APP_ENV'),
+        'app_debug' => env('APP_DEBUG'),
+        'db_connection' => env('DB_CONNECTION'),
+        'db_host' => env('DB_HOST'),
+    ]);
 });
 
 // ثم باقي الـ routes كما هي...

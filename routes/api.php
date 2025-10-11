@@ -13,6 +13,33 @@ use App\Http\Controllers\FriendController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\SearchController;
 
+// routes اختبار قبل الـ group
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'API is working',
+        'timestamp' => now()->toDateTimeString()
+    ]);
+});
+
+Route::get('/test-db', function () {
+    try {
+        DB::connection()->getPdo();
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Database connected successfully',
+            'database' => DB::connection()->getDatabaseName()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error', 
+            'message' => 'Database connection failed: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// ثم باقي الـ routes كما هي...
+
 // الروابط العامة (بدون مصادقة)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);

@@ -26,3 +26,4 @@ EXPOSE 9000
 
 # تشغيل خادم PHP
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=9000"]
+

@@ -26,6 +26,7 @@ class AuthController extends Controller
         }
 
         try {
+            Log::info('Register attempt', $request->all());
             // إنشاء المستخدم
             $user = User::create([
                 'name' => $request->name,
@@ -47,12 +48,15 @@ class AuthController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('Registration error: ' . $e->getMessage());
+            Log::error('Registration stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
-                'message' => 'خطأ في إنشاء الحساب',
-                'error' => $e->getMessage()
+                'message' => 'Server Error: ' . $e->getMessage()
             ], 500);
         }
     }
+
 
     public function login(Request $request)
     {

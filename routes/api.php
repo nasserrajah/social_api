@@ -48,6 +48,103 @@ Route::get('/test-env', function () {
     ]);
 });
 
+
+// في routes/api.php قبل الـ group
+Route::get('/routes-list', function () {
+    $routes = collect(Route::getRoutes())->map(function ($route) {
+        return [
+            'method' => implode('|', $route->methods()),
+            'uri' => $route->uri(),
+            'name' => $route->getName(),
+        ];
+    });
+    
+    return response()->json($routes->values());
+});
+
+
+Route::get('/test-migrations', function () {
+    try {
+        // طريقة بديلة للتحقق من الـ migrations
+        $migrationsPath = database_path('migrations');
+        $migrationFiles = glob($migrationsPath . '/*.php');
+        
+        $migrations = [];
+        foreach ($migrationFiles as $file) {
+            $migrations[] = basename($file);
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'migrations_count' => count($migrations),
+            'migrations_files' => $migrations,
+            'message' => 'Migrations directory accessible'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Migrations check failed: ' . $e->getMessage()
+        ], 500);
+    } 
+});
+
+Route::get('/test-tables', function () {
+    try {
+        $tables = DB::select('SELECT table_name FROM information_schema.tables WHERE table_schema = ?', [env('DB_DATABASE')]);
+        
+        $tableNames = array_map(function($table) {
+            return $table->table_name;
+        }, $tables);
+        
+        return response()->json([
+            'status' => 'success',
+            'tables_count' => count($tableNames),
+            'tables' => $tableNames,
+            'message' => 'Database tables retrieved successfully'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Tables check failed: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+Route::post('/test-register', function (Request $request) {
+    try {
+        Log::info('Test register attempt', $request->all());
+        
+        // تحقق بسيط من البيانات
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'password' => 'required|min:6',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Validation passed - Ready for actual registration',
+            'data_received' => $request->only(['name', 'email'])
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Test register error: ' . $e->getMessage());
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Test registration failed: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+
 // ثم باقي الـ routes كما هي...
 
 // الروابط العامة (بدون مصادقة)

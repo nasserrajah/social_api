@@ -48,6 +48,17 @@ Route::get('/test-env', function () {
     ]);
 });
 
+Route::get('/test-env-details', function () {
+    return response()->json([
+        'db_connection' => env('DB_CONNECTION'),
+        'db_host' => env('DB_HOST'),
+        'db_port' => env('DB_PORT'),
+        'db_database' => env('DB_DATABASE'),
+        'db_username' => env('DB_USERNAME'),
+        'app_env' => env('APP_ENV'),
+    ]);
+});
+
 
 // في routes/api.php قبل الـ group
 Route::get('/routes-list', function () {

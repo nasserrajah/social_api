@@ -6,11 +6,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
     public function register(Request $request)
     {
+        Log::info('بدء عملية التسجيل', $request->all());
         // التحقق من البيانات
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -19,6 +21,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::error('فشل التحقق من البيانات', $validator->errors()->toArray());
             return response()->json([
                 'message' => 'فشل التحقق من البيانات',
                 'errors' => $validator->errors()

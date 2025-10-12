@@ -59,6 +59,15 @@ Route::get('/test-env-details', function () {
     ]);
 });
 
+Route::get('/test-connection', function () {
+    return response()->json([
+        'status' => 'success',
+        'message' => 'API is working',
+        'database' => DB::connection()->getDatabaseName(),
+        'timestamp' => now()
+    ]);
+});
+
 
 // في routes/api.php قبل الـ group
 Route::get('/routes-list', function () {

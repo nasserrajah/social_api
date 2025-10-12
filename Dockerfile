@@ -4,10 +4,11 @@ FROM php:8.2-fpm
 # تعيين مجلد العمل داخل الحاوية
 WORKDIR /var/www/html
 
-# تثبيت الأدوات المطلوبة
+# تثبيت إضافات PostgreSQL
 RUN apt-get update && apt-get install -y \
-    git unzip libpng-dev libonig-dev libxml2-dev zip curl libzip-dev && \
-    docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+    git unzip libpng-dev libonig-dev libxml2-dev zip curl libzip-dev \
+    libpq-dev && \
+    docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip pdo_pgsql
 
 # تثبيت Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

@@ -12,6 +12,47 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\SearchController;
+use Illuminate\Support\Facades\Storage;
+
+
+
+Route::get('/files/{path}', function ($path) {
+    if (!Storage::disk('public')->exists($path)) {
+        \Log::error("File not found: " . $path);
+        abort(404, "File not found: " . $path);
+    }
+    
+    $file = Storage::disk('public')->get($path);
+    $type = Storage::disk('public')->mimeType($path);
+    
+    return response($file, 200)
+        ->header('Content-Type', $type)
+        ->header('Cache-Control', 'public, max-age=31536000');
+})->where('path', '.*');
+// هذا الـ route يجب أن يكون في البداية
+Route::get('/storage/{filename}', function ($filename) {
+    $path = storage_path('app/public/' . $filename);
+    
+    if (!file_exists($path)) {
+        // للتحقق من المسار
+        \Log::info("File not found: " . $path);
+        abort(404, "File not found: " . $filename);
+    }
+
+    $file = file_get_contents($path);
+    $type = mime_content_type($path);
+
+    return response($file, 200)->header('Content-Type', $type);
+})->where('filename', '.*');
+
+
+
+Route::middleware('auth:api')->group(function () {
+    // ... routes الأخرى
+    
+    // route جديد لفحص التخزين
+    Route::get('/storage-check', [PostController::class, 'checkStorage']);
+});
 
 // routes اختبار قبل الـ group
 Route::get('/health', function () {

@@ -10,19 +10,16 @@ use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
-   public function register(Request $request)
+public function register(Request $request)
 {
-    // ✅ هذه هي التغييرات المهمة - اقرأ البيانات من JSON
+    // ✅ اقرأ البيانات من JSON
     $data = $request->json()->all();
-    
-    // ✅ إذا لم توجد بيانات JSON، حاول من Form Data (للتوافق مع الإصدارات القديمة)
     if (empty($data)) {
         $data = $request->all();
     }
     
-    Log::info('بدء عملية التسجيل', $data);
+    \Log::info('بيانات التسجيل:', $data);
     
-    // ✅ استخدم $data بدلاً من $request->all()
     $validator = Validator::make($data, [
         'name' => 'required|string|max:255',
         'email' => 'required|email|unique:users',
@@ -30,7 +27,7 @@ class AuthController extends Controller
     ]);
 
     if ($validator->fails()) {
-        Log::error('فشل التحقق من البيانات', $validator->errors()->toArray());
+        \Log::error('فشل التحقق:', $validator->errors()->toArray());
         return response()->json([
             'message' => 'فشل التحقق من البيانات',
             'errors' => $validator->errors()
@@ -38,28 +35,22 @@ class AuthController extends Controller
     }
 
     try {
-        // ✅ استخدم $data بدلاً من $request
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'created_at' => $user->created_at,
-            ],
+            'message' => 'تم التسجيل بنجاح',
+            'user' => $user,
             'token' => $token
         ], 201);
-
-    } catch (\Exception $e) {
-        Log::error('Registration error: ' . $e->getMessage());
         
+    } catch (\Exception $e) {
+        \Log::error('خطأ في التسجيل: ' . $e->getMessage());
         return response()->json([
             'message' => 'Server Error: ' . $e->getMessage()
         ], 500);

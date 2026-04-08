@@ -10,111 +10,116 @@ use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        Log::info('بدء عملية التسجيل', $request->all());
-        // التحقق من البيانات
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6|confirmed',
-        ]);
+   public function register(Request $request)
+{
+    // ✅ هذه هي التغييرات المهمة - اقرأ البيانات من JSON
+    $data = $request->json()->all();
+    
+    // ✅ إذا لم توجد بيانات JSON، حاول من Form Data (للتوافق مع الإصدارات القديمة)
+    if (empty($data)) {
+        $data = $request->all();
+    }
+    
+    Log::info('بدء عملية التسجيل', $data);
+    
+    // ✅ استخدم $data بدلاً من $request->all()
+    $validator = Validator::make($data, [
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users',
+        'password' => 'required|min:6|confirmed',
+    ]);
 
-        if ($validator->fails()) {
-            Log::error('فشل التحقق من البيانات', $validator->errors()->toArray());
-            return response()->json([
-                'message' => 'فشل التحقق من البيانات',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            Log::info('Register attempt', $request->all());
-            // إنشاء المستخدم
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-            ]);
-
-            // إنشاء التوكن
-            $token = $user->createToken('auth-token')->plainTextToken;
-
-            return response()->json([
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'created_at' => $user->created_at,
-                ],
-                'token' => $token
-            ], 201);
-
-        } catch (\Exception $e) {
-            Log::error('Registration error: ' . $e->getMessage());
-            Log::error('Registration stack trace: ' . $e->getTraceAsString());
-            
-            return response()->json([
-                'message' => 'Server Error: ' . $e->getMessage()
-            ], 500);
-        }
+    if ($validator->fails()) {
+        Log::error('فشل التحقق من البيانات', $validator->errors()->toArray());
+        return response()->json([
+            'message' => 'فشل التحقق من البيانات',
+            'errors' => $validator->errors()
+        ], 422);
     }
 
-
-    public function login(Request $request)
-    {
-        // التحقق من البيانات
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required'
+    try {
+        // ✅ استخدم $data بدلاً من $request
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'فشل التحقق من البيانات',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $token = $user->createToken('auth-token')->plainTextToken;
 
-        try {
-            // البحث عن المستخدم
-            $user = User::where('email', $request->email)->first();
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'created_at' => $user->created_at,
+            ],
+            'token' => $token
+        ], 201);
 
-            if (!$user) {
-                return response()->json([
-                    'message' => 'المستخدم غير موجود'
-                ], 404);
-            }
-
-            // التحقق من كلمة المرور
-            if (!Hash::check($request->password, $user->password)) {
-                return response()->json([
-                    'message' => 'كلمة المرور خاطئة'
-                ], 401);
-            }
-
-            // حذف التوكنات القديمة
-            $user->tokens()->delete();
-            
-            // إنشاء توكن جديد
-            $token = $user->createToken('auth-token')->plainTextToken;
-
-            return response()->json([
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                ],
-                'token' => $token
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'خطأ في تسجيل الدخول',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+    } catch (\Exception $e) {
+        Log::error('Registration error: ' . $e->getMessage());
+        
+        return response()->json([
+            'message' => 'Server Error: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+public function login(Request $request)
+{
+    // ✅ اقرأ البيانات من JSON
+    $data = $request->json()->all();
+    if (empty($data)) {
+        $data = $request->all();
+    }
+    
+    $validator = Validator::make($data, [
+        'email' => 'required|email',
+        'password' => 'required'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'فشل التحقق من البيانات',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        $user = User::where('email', $data['email'])->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'المستخدم غير موجود'
+            ], 404);
+        }
+
+        if (!Hash::check($data['password'], $user->password)) {
+            return response()->json([
+                'message' => 'كلمة المرور خاطئة'
+            ], 401);
+        }
+
+        $user->tokens()->delete();
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'token' => $token
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'خطأ في تسجيل الدخول',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 
     public function logout(Request $request)
     {
